@@ -40,3 +40,13 @@ def api_simulation(request):
     queryset = SimulationResult.objects.all()
     serializer = ResultsSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+def graphics_wt(request):
+    data = list(SimulationResult.objects.all().values('avg_wt', 'simulation'))
+    return render(request, 'simulation/graphics_wt.html', {'data': data})
+
+
+def graphics_tis(request):
+    data = list(SimulationResult.objects.all().values('avg_tis', 'simulation'))
+    return render(request, 'simulation/graphics_tis.html', {'data': data})
