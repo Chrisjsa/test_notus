@@ -1,5 +1,7 @@
 import numpy as np
 import simpy
+import random
+from .models import *
 
 
 class Cashier(object):
@@ -90,7 +92,7 @@ def arrival(env, start, rate, cashiers, min_n_prods, max_n_prods, stats):
         env.process(p_buy(env, customer, cashiers))
 
 
-def setup(env, cashier_data, arrival_data, proc_time, min_n_prods, max_n_prods, stats):
+def setup(env, cashier_data, arrival_data, proc_time, min_n_prods, max_n_prods, stats, simulation):
     cashiers = [
         Cashier(env, start_time, end_time, proc_time)
         for start_time, end_time in cashier_data
@@ -98,24 +100,34 @@ def setup(env, cashier_data, arrival_data, proc_time, min_n_prods, max_n_prods, 
     # start cashiers
     for cashier in cashiers:
         env.process(cashier.schedule())
+        cash_model = Cashier()
+        cash_model.start_hour = cashier.start_hour
+        cash_model.end_hour = cashier.end_hour
+        cash_model.n = cashier.n
+        cash_model.simulation = simulation
+        cash_model.save()
     for start_hour, rate in arrival_data:
         env.process(arrival(env, start_hour, rate, cashiers, min_n_prods, max_n_prods, stats))
+        arte_model = ArrivalRate()
+        arte_model.hour = start_hour
+        arte_model.arrivals = rate
+        arte_model.simulation = simulation
 
 
-def main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats):
+def main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats, simulation):
     # Setup and start the simulation
     if RANDOM_SEED is not None:
         np.random.seed(RANDOM_SEED)  # This helps reproducing the results
 
     # Create an environment and start the setup process
     env = simpy.Environment()
-    setup(env, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats)
+    setup(env, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats, simulation)
 
     # Execute
     env.run(until=SIM_TIME)
 
 
-def print_results(stats):
+def print_results(stats, simulation):
     stats = [s for s in stats if s.leave is not None]
     arrival = np.array([s.arrival for s in stats])
     queue = np.array([s.queue for s in stats])
@@ -126,10 +138,15 @@ def print_results(stats):
     print(f'tiempo de espera: {wait_time:.2f}')
     time_in_system = np.average(leave - arrival)
     print(f'tiempo en sistema: {time_in_system:.2f}')
+    resu_model = SimulationResult()
+    resu_model.avg_wt = wait_time
+    resu_model.avg_tis = time_in_system
+    resu_model.simulation = simulation
 
 
-if __name__ == '__main__':
-    RANDOM_SEED = 42
+# if __name__ == '__main__':
+def run_simulation(user, prod_min, prod_max, proc_time, replica):
+    RANDOM_SEED = random.randint(40, 50)
     SIM_TIME = 166 * 60     # Simulation time in minutes
     CASHIER_DATA = [
         *([8, 16] for _ in range(5)),
@@ -146,9 +163,16 @@ if __name__ == '__main__':
         [128, 27],[129, 42],[130, 47],[131, 43],[132, 52],[133, 55],[134, 49],[135, 46],[136, 48],[137, 50],[138, 51],[139, 34],[140, 38],[141, 53],[142, 23],
         [152, 27],[153, 33],[154, 32],[155, 43],[156, 37],[157, 46],[158, 47],[159, 53],[160, 56],[161, 55],[162, 44],[163, 51],[164, 44],[165, 48],[166, 21]
     ]
-    PROC_TIME = 25
-    MIN_PRODS = 10
-    MAX_PRODS = 30
+    # PROC_TIME = 25
+    # MIN_PRODS = 10
+    # MAX_PRODS = 30
     stats = []
-    main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats)
-    print_results(stats)
+    simu_model = Simulation()
+    simu_model.user = user
+    simu_model.proc_time = proc_time
+    simu_model.n_prod_min = prod_min
+    simu_model.n_prod_max = prod_max
+    simu_model.replica = replica
+    simu_model.save()
+    main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, proc_time, prod_min, prod_max, stats, simu_model)
+    print_results(stats, simu_model)
