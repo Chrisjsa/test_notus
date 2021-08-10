@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from .forms import SimulationForm
-from .simulation import run_simulation
+from .simulation import *
 
 # Create your views here.
 
@@ -17,7 +17,17 @@ def simulation_form(request):
                            simulation.n_prod_max,
                            simulation.proc_time,
                            simulation.replica)
-            return redirect('simulation_records', pk=simulation.pk)
+            return redirect('simulation_records')
     else:
         form = SimulationForm()
     return render(request, 'simulation/simulation_form.html', {'form': form})
+
+
+def simulation_records(request):
+    records = Simulation.objects.all()
+    return render(request, 'simulation/simulation_records.html', {'records': records})
+
+
+def simulation_results(request):
+    results = SimulationResult.objects.all()
+    return render(request, 'simulation/simulation_results.html', {'results': results})

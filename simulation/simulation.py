@@ -4,7 +4,7 @@ import random
 from .models import *
 
 
-class Cashier(object):
+class CashierSim(object):
     def __init__(self, env, start_time, end_time, proc_time):
         self.env = env
         self.resource = simpy.Resource(env, 1)
@@ -41,12 +41,13 @@ class CustomerStat(object):
 
 class Customer(object):
     id = 0
-    def __init__(self, prods, arrival):
+
+    def __init__(self, prods, arrival_here):
         Customer.id += 1
         self.id = Customer.id
         self.prods = prods
         self.stats = CustomerStat()
-        self.stats.arrival = arrival
+        self.stats.arrival = arrival_here
     
     def get_stats(self):
         return [
@@ -87,23 +88,23 @@ def arrival(env, start, rate, cashiers, min_n_prods, max_n_prods, stats):
             # stop
             break
         # create customer with random products
-        customer = Customer(prods=np.random.uniform(min_n_prods, max_n_prods), arrival=env.now)
+        customer = Customer(prods=np.random.uniform(min_n_prods, max_n_prods), arrival_here=env.now)
         stats.append(customer.stats)
         env.process(p_buy(env, customer, cashiers))
 
 
 def setup(env, cashier_data, arrival_data, proc_time, min_n_prods, max_n_prods, stats, simulation):
     cashiers = [
-        Cashier(env, start_time, end_time, proc_time)
+        CashierSim(env, start_time, end_time, proc_time)
         for start_time, end_time in cashier_data
     ]
     # start cashiers
     for cashier in cashiers:
         env.process(cashier.schedule())
         cash_model = Cashier()
-        cash_model.start_hour = cashier.start_hour
-        cash_model.end_hour = cashier.end_hour
-        cash_model.n = cashier.n
+        cash_model.start_hour = cashier.start_time
+        cash_model.end_hour = cashier.end_time
+        cash_model.n = 1
         cash_model.simulation = simulation
         cash_model.save()
     for start_hour, rate in arrival_data:
@@ -112,6 +113,7 @@ def setup(env, cashier_data, arrival_data, proc_time, min_n_prods, max_n_prods, 
         arte_model.hour = start_hour
         arte_model.arrivals = rate
         arte_model.simulation = simulation
+        arte_model.save()
 
 
 def main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS, MAX_PRODS, stats, simulation):
@@ -129,19 +131,20 @@ def main(RANDOM_SEED, SIM_TIME, CASHIER_DATA, ARRIVAL_DATA, PROC_TIME, MIN_PRODS
 
 def print_results(stats, simulation):
     stats = [s for s in stats if s.leave is not None]
-    arrival = np.array([s.arrival for s in stats])
+    arrival_out = np.array([s.arrival for s in stats])
     queue = np.array([s.queue for s in stats])
     process = np.array([s.process for s in stats])
     leave = np.array([s.leave for s in stats])
-    print(f'total llegadas: {arrival.shape[0]}')
+    print(f'total llegadas: {arrival_out.shape[0]}')
     wait_time = np.average(process - queue)
     print(f'tiempo de espera: {wait_time:.2f}')
-    time_in_system = np.average(leave - arrival)
+    time_in_system = np.average(leave - arrival_out)
     print(f'tiempo en sistema: {time_in_system:.2f}')
     resu_model = SimulationResult()
     resu_model.avg_wt = wait_time
     resu_model.avg_tis = time_in_system
     resu_model.simulation = simulation
+    resu_model.save()
 
 
 # if __name__ == '__main__':

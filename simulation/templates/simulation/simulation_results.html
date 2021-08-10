@@ -1,0 +1,16 @@
+{% extends 'simulation/base.html' %}
+
+{% block content %}
+    <div>
+        <h1><a>Resultados</a></h1>
+    </div>
+    {% for each in results %}
+        <div>
+            <p>
+                Simulacion: {{ each.simulation.replica }} |
+                Tiempo de espera promedio: {{ each.avg_wt }} |
+                Tiempo en sistema promedio: {{ each.avg_tis }}
+            </p>
+        </div>
+    {% endfor %}
+{% endblock %}

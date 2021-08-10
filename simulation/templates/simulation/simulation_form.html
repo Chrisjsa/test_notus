@@ -1,7 +1,13 @@
 {% extends 'simulation/base.html' %}
 
 {% block content %}
+    <div class="page-header">
+        <a href="{% url 'simulation_form' %}" class="top-menu"></a>
+    </div>
 
-    <p>Aqui va el formulario</p>
-
+    <h2>Registrar Simulacion</h2>
+    <form method="POST" class="post-form">{% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="save btn btn-default">Iniciar</button>
+    </form>
 {% endblock %}
