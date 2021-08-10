@@ -2,3 +2,4 @@ pipdeptree
 django
 numpy
 simpy
+djangorestframework
